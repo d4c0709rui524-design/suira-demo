@@ -65,6 +65,19 @@ svg.i.l{width:26px;height:26px}
 .vseg{padding:2px 16px 6px}.vhead{font-size:12.5px;font-weight:700;color:var(--mute);padding:14px 22px 6px}
 .vlang{font-size:11px;font-weight:700;color:var(--brand);background:var(--brand-soft,#FFEDE9);padding:3px 8px;border-radius:999px;margin-left:8px;vertical-align:2px}
 .s-p{font-size:12px;color:var(--mute);margin-top:3px}.s-j{font-size:12.5px;color:var(--ink2);margin-top:6px}
+.lswipe{position:relative}
+.chat.sl{animation:slL .22s ease}.chat.sr{animation:slR .22s ease}
+@keyframes slL{from{transform:translateX(36px);opacity:.3}to{transform:none;opacity:1}}
+@keyframes slR{from{transform:translateX(-36px);opacity:.3}to{transform:none;opacity:1}}
+.ldots{display:flex;justify-content:center;gap:5px;padding:0 0 6px;background:var(--surface)}
+.ldots i{width:5px;height:5px;border-radius:3px;background:var(--hair2,#D9D9DE);transition:all .2s}
+.ldots i.on{width:14px;background:var(--brand)}
+.ldots i.pp{background:none;border:1.2px solid var(--mute2,#B8B8BF);width:5px;height:5px}
+.ppage{position:absolute;inset:0;background:var(--bg);z-index:40;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);visibility:hidden}
+.ppage.show{transform:none;visibility:visible}
+.ppage .nav{background:var(--surface)}.pick-t{font-size:17px;flex:1}
+.ppage .row.cur{background:var(--brand-soft)}
+html.native .ppage .nav{height:calc(52px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top)}
 .nflag{display:inline-block;width:17px;height:17px;border-radius:50%;overflow:hidden;vertical-align:-2px;margin-left:6px;box-shadow:0 0 0 1px rgba(0,0,0,.08);flex:none}
 .nflag svg{width:100%;height:100%;display:block}
 .sname .nflag{width:13px;height:13px;margin-left:4px;vertical-align:-2px}
@@ -543,12 +556,16 @@ html.native .toast{bottom:calc(96px + env(safe-area-inset-bottom))}
       <button class="back" onclick="openChatMenu()" aria-label="メニュー" style="margin-right:-4px">${I.more}</button>
     </div>
     <div class="langbar"><div class="segc" id="dispSeg"></div><div class="stopped" id="stopped" style="display:none"></div><button class="ghost" id="eyeBtn" onclick="togglePeek()" aria-label="相手の画面">${I.eye}</button><button class="recov" id="recov" style="display:none" onclick="watchAd()">${I.play}回復</button></div>
-    <div class="quota" style="position:relative"><div class="qtrack"><i id="qfill"></i></div></div>
+    <div class="ldots" id="ldots"></div><div class="quota" style="position:relative"><div class="qtrack"><i id="qfill"></i></div></div>
     <div class="peek" id="peek"></div>
     <div class="chat" id="chat"></div>
     <div class="composer">
       <input id="inp" placeholder="メッセージ" oninput="sendState()" onkeydown="onKey(event)">
       <button class="sendb off" id="sendB" onclick="send()" aria-label="送信">${I.up}</button>
+    </div>
+    <div class="ppage" id="pick">
+      <div class="nav"><button class="back" onclick="closePick()">${I.chevL}</button><b class="pick-t">トーク相手</b></div>
+      <div class="scroll" id="pickList"></div>
     </div>
   </section>
 
@@ -922,9 +939,14 @@ msgs.push(...[{"id": 401, "from": "them", "pid": "camille", "orig": "fr", "time"
 vocab.push(...[{"w": "J'ai hâte", "lang": "fr", "pid": "camille", "src": "Disons 14h devant la gare. J'ai hâte ! 🎨", "date": "11/19", "lv": 2, "voice": "native"}, {"w": "ensemble", "lang": "fr", "pid": "camille", "src": "Salut ! Tu es libre samedi ? On va au musée ensemble ?", "date": "11/19", "lv": 3, "voice": "none"}, {"w": "a mi casa", "lang": "es", "pid": "diego", "src": "¡Oye! He hecho paella. ¿Quieres venir a cenar a mi casa?", "date": "11/19", "lv": 1, "voice": "native"}, {"w": "Oye", "lang": "es", "pid": "diego", "src": "¡Oye! He hecho paella. ¿Quieres venir a cenar a mi casa?", "date": "11/19", "lv": 4, "voice": "none"}, {"w": "knackered", "lang": "en", "pid": "daniel", "src": "Mate, I've got an exam tomorrow and I'm knackered 😵", "date": "11/19", "lv": 1, "voice": "native"}, {"w": "Cheers", "lang": "en", "pid": "daniel", "src": "Cheers! You're a legend 🙌", "date": "11/19", "lv": 3, "voice": "none"}, {"w": "Il fait froid", "lang": "fr", "pid": "samuel", "src": "Il neige déjà à Montréal ! ❄️ Il fait froid à Tokyo ?", "date": "11/19", "lv": 2, "voice": "native"}]);
 
 /* ===== デモ用：国旗SVG ===== */
-const FLAGSVG={"fr": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#EF4135\"/><rect width=\"13.4\" height=\"20\" fill=\"#fff\"/><rect width=\"6.7\" height=\"20\" fill=\"#0055A4\"/></svg>", "es": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#AA151B\"/><rect y=\"5\" width=\"20\" height=\"10\" fill=\"#F1BF00\"/></svg>", "cn": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#EE1C25\"/><polygon fill=\"#FFDE00\" points=\"6.50,3.40 7.35,5.84 9.92,5.89 7.87,7.44 8.62,9.91 6.50,8.44 4.38,9.91 5.13,7.44 3.08,5.89 5.65,5.84\"/><polygon fill=\"#FFDE00\" points=\"12.10,2.16 11.94,3.00 12.67,3.45 11.82,3.56 11.63,4.39 11.26,3.62 10.40,3.69 11.03,3.10 10.70,2.31 11.45,2.72\"/><polygon fill=\"#FFDE00\" points=\"14.21,4.82 14.35,5.67 15.19,5.83 14.42,6.23 14.53,7.08 13.92,6.47 13.14,6.83 13.52,6.07 12.94,5.44 13.79,5.57\"/><polygon fill=\"#FFDE00\" points=\"13.79,8.42 14.21,9.17 15.06,9.04 14.48,9.67 14.86,10.43 14.08,10.07 13.47,10.68 13.58,9.83 12.81,9.43 13.65,9.27\"/><polygon fill=\"#FFDE00\" points=\"10.90,11.16 11.55,11.72 12.30,11.31 11.97,12.10 12.60,12.69 11.74,12.62 11.37,13.39 11.18,12.56 10.33,12.45 11.06,12.00\"/></svg>", "us": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#fff\"/><rect y=\"0.00\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"3.08\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"6.15\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"9.23\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"12.31\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"15.38\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"18.46\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect width=\"10\" height=\"10.77\" fill=\"#3C3B6E\"/><circle cx=\"1.40\" cy=\"1.40\" r=\".55\" fill=\"#fff\"/><circle cx=\"3.80\" cy=\"1.40\" r=\".55\" fill=\"#fff\"/><circle cx=\"6.20\" cy=\"1.40\" r=\".55\" fill=\"#fff\"/><circle cx=\"8.60\" cy=\"1.40\" r=\".55\" fill=\"#fff\"/><circle cx=\"2.60\" cy=\"4.00\" r=\".55\" fill=\"#fff\"/><circle cx=\"5.00\" cy=\"4.00\" r=\".55\" fill=\"#fff\"/><circle cx=\"7.40\" cy=\"4.00\" r=\".55\" fill=\"#fff\"/><circle cx=\"9.80\" cy=\"4.00\" r=\".55\" fill=\"#fff\"/><circle cx=\"1.40\" cy=\"6.60\" r=\".55\" fill=\"#fff\"/><circle cx=\"3.80\" cy=\"6.60\" r=\".55\" fill=\"#fff\"/><circle cx=\"6.20\" cy=\"6.60\" r=\".55\" fill=\"#fff\"/><circle cx=\"8.60\" cy=\"6.60\" r=\".55\" fill=\"#fff\"/><circle cx=\"2.60\" cy=\"9.20\" r=\".55\" fill=\"#fff\"/><circle cx=\"5.00\" cy=\"9.20\" r=\".55\" fill=\"#fff\"/><circle cx=\"7.40\" cy=\"9.20\" r=\".55\" fill=\"#fff\"/><circle cx=\"9.80\" cy=\"9.20\" r=\".55\" fill=\"#fff\"/></svg>", "gb": "<svg viewBox=\"15 0 30 30\" xmlns=\"http://www.w3.org/2000/svg\"><clipPath id=\"ukt\"><path d=\"M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z\"/></clipPath><rect width=\"60\" height=\"30\" fill=\"#012169\"/><path d=\"M0,0 L60,30 M60,0 L0,30\" stroke=\"#fff\" stroke-width=\"6\"/><path d=\"M0,0 L60,30 M60,0 L0,30\" clip-path=\"url(#ukt)\" stroke=\"#C8102E\" stroke-width=\"4\"/><path d=\"M30,0 v30 M0,15 h60\" stroke=\"#fff\" stroke-width=\"10\"/><path d=\"M30,0 v30 M0,15 h60\" stroke=\"#C8102E\" stroke-width=\"6\"/></svg>", "ca": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#fff\"/><rect width=\"4.2\" height=\"20\" fill=\"#D80621\"/><rect x=\"15.8\" width=\"4.2\" height=\"20\" fill=\"#D80621\"/><path d=\"M10 3.2 L11.2 5.5 L12.6 4.9 L12.2 7.9 L14.2 6.3 L14.6 7.5 L16.4 7.1 L15.8 9.1 L16.8 9.7 L13.6 12.3 L14 13.5 L10.6 13.1 L10.6 16.4 L9.4 16.4 L9.4 13.1 L6 13.5 L6.4 12.3 L3.2 9.7 L4.2 9.1 L3.6 7.1 L5.4 7.5 L5.8 6.3 L7.8 7.9 L7.4 4.9 L8.8 5.5 Z\" fill=\"#D80621\"/></svg>"};
-P.li.cc='cn';P.james.cc='us';P.emma.cc='us';P.camille.cc='fr';P.diego.cc='es';P.daniel.cc='gb';P.samuel.cc='ca';
-vocab.push({w:"好啊",lang:"zh",pid:"me",src:"好啊！七点在车站见吧。",date:"11/19",lv:2,voice:"none"},{w:"Sounds good",lang:"en",pid:"me",src:"Sounds good! Let's meet at the station at 7.",date:"11/19",lv:3,voice:"none"});
+const FLAGSVG={"fr": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#EF4135\"/><rect width=\"13.4\" height=\"20\" fill=\"#fff\"/><rect width=\"6.7\" height=\"20\" fill=\"#0055A4\"/></svg>", "es": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#AA151B\"/><rect y=\"5\" width=\"20\" height=\"10\" fill=\"#F1BF00\"/></svg>", "cn": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#EE1C25\"/><polygon fill=\"#FFDE00\" points=\"6.50,3.40 7.35,5.84 9.92,5.89 7.87,7.44 8.62,9.91 6.50,8.44 4.38,9.91 5.13,7.44 3.08,5.89 5.65,5.84\"/><polygon fill=\"#FFDE00\" points=\"12.10,2.16 11.94,3.00 12.67,3.45 11.82,3.56 11.63,4.39 11.26,3.62 10.40,3.69 11.03,3.10 10.70,2.31 11.45,2.72\"/><polygon fill=\"#FFDE00\" points=\"14.21,4.82 14.35,5.67 15.19,5.83 14.42,6.23 14.53,7.08 13.92,6.47 13.14,6.83 13.52,6.07 12.94,5.44 13.79,5.57\"/><polygon fill=\"#FFDE00\" points=\"13.79,8.42 14.21,9.17 15.06,9.04 14.48,9.67 14.86,10.43 14.08,10.07 13.47,10.68 13.58,9.83 12.81,9.43 13.65,9.27\"/><polygon fill=\"#FFDE00\" points=\"10.90,11.16 11.55,11.72 12.30,11.31 11.97,12.10 12.60,12.69 11.74,12.62 11.37,13.39 11.18,12.56 10.33,12.45 11.06,12.00\"/></svg>", "us": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#fff\"/><rect y=\"0.00\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"3.08\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"6.15\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"9.23\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"12.31\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"15.38\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect y=\"18.46\" width=\"20\" height=\"1.54\" fill=\"#B22234\"/><rect width=\"10\" height=\"10.77\" fill=\"#3C3B6E\"/><circle cx=\"1.40\" cy=\"1.40\" r=\".55\" fill=\"#fff\"/><circle cx=\"3.80\" cy=\"1.40\" r=\".55\" fill=\"#fff\"/><circle cx=\"6.20\" cy=\"1.40\" r=\".55\" fill=\"#fff\"/><circle cx=\"8.60\" cy=\"1.40\" r=\".55\" fill=\"#fff\"/><circle cx=\"2.60\" cy=\"4.00\" r=\".55\" fill=\"#fff\"/><circle cx=\"5.00\" cy=\"4.00\" r=\".55\" fill=\"#fff\"/><circle cx=\"7.40\" cy=\"4.00\" r=\".55\" fill=\"#fff\"/><circle cx=\"9.80\" cy=\"4.00\" r=\".55\" fill=\"#fff\"/><circle cx=\"1.40\" cy=\"6.60\" r=\".55\" fill=\"#fff\"/><circle cx=\"3.80\" cy=\"6.60\" r=\".55\" fill=\"#fff\"/><circle cx=\"6.20\" cy=\"6.60\" r=\".55\" fill=\"#fff\"/><circle cx=\"8.60\" cy=\"6.60\" r=\".55\" fill=\"#fff\"/><circle cx=\"2.60\" cy=\"9.20\" r=\".55\" fill=\"#fff\"/><circle cx=\"5.00\" cy=\"9.20\" r=\".55\" fill=\"#fff\"/><circle cx=\"7.40\" cy=\"9.20\" r=\".55\" fill=\"#fff\"/><circle cx=\"9.80\" cy=\"9.20\" r=\".55\" fill=\"#fff\"/></svg>", "gb": "<svg viewBox=\"15 0 30 30\" xmlns=\"http://www.w3.org/2000/svg\"><clipPath id=\"ukt\"><path d=\"M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z\"/></clipPath><rect width=\"60\" height=\"30\" fill=\"#012169\"/><path d=\"M0,0 L60,30 M60,0 L0,30\" stroke=\"#fff\" stroke-width=\"6\"/><path d=\"M0,0 L60,30 M60,0 L0,30\" clip-path=\"url(#ukt)\" stroke=\"#C8102E\" stroke-width=\"4\"/><path d=\"M30,0 v30 M0,15 h60\" stroke=\"#fff\" stroke-width=\"10\"/><path d=\"M30,0 v30 M0,15 h60\" stroke=\"#C8102E\" stroke-width=\"6\"/></svg>", "ca": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#fff\"/><rect width=\"4.2\" height=\"20\" fill=\"#D80621\"/><rect x=\"15.8\" width=\"4.2\" height=\"20\" fill=\"#D80621\"/><path d=\"M10 3.2 L11.2 5.5 L12.6 4.9 L12.2 7.9 L14.2 6.3 L14.6 7.5 L16.4 7.1 L15.8 9.1 L16.8 9.7 L13.6 12.3 L14 13.5 L10.6 13.1 L10.6 16.4 L9.4 16.4 L9.4 13.1 L6 13.5 L6.4 12.3 L3.2 9.7 L4.2 9.1 L3.6 7.1 L5.4 7.5 L5.8 6.3 L7.8 7.9 L7.4 4.9 L8.8 5.5 Z\" fill=\"#D80621\"/></svg>", "tw": "<svg viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"20\" height=\"20\" fill=\"#FE0000\"/><rect width=\"11\" height=\"11\" fill=\"#000095\"/><polygon fill=\"#fff\" points=\"5.50,1.60 6.10,3.28 7.45,2.12 7.13,3.87 8.88,3.55 7.72,4.90 9.40,5.50 7.72,6.10 8.88,7.45 7.13,7.13 7.45,8.88 6.10,7.72 5.50,9.40 4.90,7.72 3.55,8.88 3.87,7.13 2.12,7.45 3.28,6.10 1.60,5.50 3.28,4.90 2.12,3.55 3.87,3.87 3.55,2.12 4.90,3.28\"/><circle cx=\"5.5\" cy=\"5.5\" r=\"2.15\" fill=\"#000095\"/><circle cx=\"5.5\" cy=\"5.5\" r=\"1.8\" fill=\"#fff\"/></svg>"};
+P.li.cc='tw';P.james.cc='us';P.emma.cc='us';P.camille.cc='fr';P.diego.cc='es';P.daniel.cc='gb';P.samuel.cc='ca';
+vocab.push({w:"好啊",lang:"zht",pid:"me",src:"好啊！七點在車站見吧。",date:"11/19",lv:2,voice:"none"},{w:"Sounds good",lang:"en",pid:"me",src:"Sounds good! Let's meet at the station at 7.",date:"11/19",lv:3,voice:"none"});
+/* ===== デモ用：李雪は台湾出身（繁體中文） ===== */
+P.li.lang="zht";P.li.flag="🇹🇼";learn=["zht","en"];
+[...msgs,...HIST].forEach(m=>{if((m.pid==="li"&&m.from!=="me")||m.sender==="li")m.orig="zht";});
+(function(){const W={"没问题":"沒問題","谢谢":"謝謝"},S={"没问题！我会早点到的😊":"沒問題！我會早點到的😊","我们一起去吧！":"我們一起去吧！","谢谢你的帮助！":"謝謝你的幫助！"};
+ vocab.forEach(v=>{if(v.pid==="li"&&v.lang==="zh"){v.lang="zht";v.w=W[v.w]||v.w;v.src=S[v.src]||v.src;}});})();
 
 </script>
 <script>
@@ -974,7 +996,7 @@ function toggleMute(id){muted=muted.includes(id)?muted.filter(x=>x!==id):[...mut
 function togglePin(id){pins=pins.includes(id)?pins.filter(x=>x!==id):[id,...pins];closeSheet();renderTalks();}
 /* ===== お知らせ（LINE風） ===== */
 let NOTIFS=[
- {k:"voice",who:"li",txt:"李雪さんが「没问题」の発音を録音しました",t:"5分前",un:true},
+ {k:"voice",who:"li",txt:"李雪さんが「沒問題」の発音を録音しました",t:"5分前",un:true},
  {k:"req",who:"sofia",txt:"Sofíaさんから友だち申請が届きました",t:"32分前",un:true},
  {k:"streak",txt:"12日連続で学習中。今日も記録しよう",t:"1時間前",un:true},
  {k:"quota",txt:"翻訳の文字数が回復しました",t:"今日 0:00",un:false},
@@ -1028,6 +1050,7 @@ function renderChat(){
   });
   const c=document.getElementById("chat");c.innerHTML=h;c.scrollTop=c.scrollHeight;
   renderQuota();
+  {const ls=roomLangsFor(room),ix=peek?-1:ls.indexOf(disp);document.getElementById("ldots").innerHTML=ls.map((l,i)=>`<i class="${i===ix?'on':''}"></i>`).join("")+'<i class="pp"></i>';}
   document.getElementById("dispSeg").innerHTML=roomLangsFor(room).map(l=>`<button class="${!peek&&l===disp?'on':''}" onclick="setDisp('${l}')">${LN[l]}</button>`).join("");
 }
 /* --- トークのメニュー（通知・ブロック・通報）。App Store 審査 1.2 の対応 --- */
@@ -1054,6 +1077,28 @@ function askBlock(id){openMenu(`<div class="sheet-title">${P[id].name}さんを�
   <button class="btn" style="background:var(--fill);margin-top:8px" onclick="closeSheet()">キャンセル</button>`);}
 function doBlock(id){closeSheet();BLOCKED.push({name:P[id].name,ini:P[id].ini,uid:id});BLOCKED_IDS.push(id);order=order.filter(x=>x!==id);go("talks");toast(Is("check","s")+"ブロックしました");}
 function setDisp(l){disp=l;peek=false;document.getElementById("eyeBtn").classList.remove("on");document.getElementById("peek").classList.remove("show");renderChat();}
+
+/* ===== スワイプで翻訳を切り替え。一番右の言語でさらに左へ → 人を選ぶページ ===== */
+let swX=null,swY=0;
+function swStart(e){if(e.target.closest&&e.target.closest("input,button"))return;const t=e.touches?e.touches[0]:e;swX=t.clientX;swY=t.clientY;}
+function swEnd(e){if(swX===null)return;const t=e.changedTouches?e.changedTouches[0]:e,dx=t.clientX-swX,dy=t.clientY-swY;swX=null;
+  if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.4)return;
+  if(document.getElementById("pick").classList.contains("show")){if(dx>0)closePick();return;}
+  if(document.getElementById("stopped").style.display!=="none")return;
+  const ls=roomLangsFor(room),i=peek?-1:ls.indexOf(disp);
+  if(dx<0){if(i>=ls.length-1){openPick();return;}setDisp(ls[i+1]);anim("sl");}
+  else{if(i<=0)return;setDisp(ls[i-1]);anim("sr");}}
+function anim(c){const el=document.getElementById("chat");el.classList.remove("sl","sr");void el.offsetWidth;el.classList.add(c);}
+function openPick(){renderPick();document.getElementById("pick").classList.add("show");}
+function closePick(){document.getElementById("pick").classList.remove("show");}
+function renderPick(){const ids=[...order.filter(id=>pins.includes(id)),...order.filter(id=>!pins.includes(id))].filter(id=>P[id]&&!BLOCKED_IDS.includes(id));
+  document.getElementById("pickList").innerHTML='<div style="height:6px"></div>'+ids.map(id=>{const p=P[id],r=roomMsgs(id),last=r[r.length-1];
+    const txt=last&&last.v[myLang]?last.v[myLang].t:"";
+    return `<div class="row ${id===room?'cur':''}" onclick="pickRoom('${id}')">${avatar(id,"m")}<div class="mid"><div class="top"><div class="name">${p.name}${flagTag(id)}</div>${unread[id]?`<span class="badge">${unread[id]}</span>`:''}</div><div class="bot"><div class="last">${txt}</div></div></div></div>`;}).join("");}
+function pickRoom(id){closePick();if(id!==room){openRoom(id);}}
+(function(){const r=document.getElementById("s-room");if(!r)return;
+  r.addEventListener("touchstart",swStart,{passive:true});r.addEventListener("touchend",swEnd,{passive:true});
+  r.addEventListener("mousedown",swStart);r.addEventListener("mouseup",swEnd);})();
 function togglePeek(){peek=!peek;document.getElementById("eyeBtn").classList.toggle("on",peek);document.getElementById("peek").classList.toggle("show",peek);renderChat();}
 /* ===== 文字数バー（AIの翻訳に使える文字数） ===== */
 let QMAX=10000; let quota=QMAX; let STREAK=12;
@@ -1376,7 +1421,7 @@ function obFinish(){const n=document.getElementById("obPName").value.trim(),h=do
 function obLogin(){obMe=myLang;obLearn=[...learn];tutSeen=true;obDone();}
 function obToggle(l){obLearn=obLearn.includes(l)?obLearn.filter(x=>x!==l):[...obLearn,l].slice(0,2);renderOb();}
 let DEMO=false;
-function obDemo(){obMe="ja";obLearn=["zh","en"];obDone();}
+function obDemo(){obMe="ja";obLearn=["zht","en"];obDone();}
 function obDone(){OB_BACK[1]="s";myLang=obMe;learn=obLearn;seedStudy();disp=myLang;msgs.forEach(m=>{if(m.from==="me")m.orig=myLang;});document.getElementById("ob").classList.add("hide");renderTalks();updateQ();renderTabs();if(!tutSeen){tutSeen=true;openTut();}if(cur==="me")renderMe();}
 let tutSeen=false;
 
