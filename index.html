@@ -513,6 +513,8 @@ html.native .toast{bottom:calc(96px + env(safe-area-inset-bottom))}
 .toast{position:absolute;left:50%;bottom:104px;transform:translate(-50%,14px);background:rgba(17,17,20,.92);color:#fff;font-size:13.5px;font-weight:600;padding:10px 16px;border-radius:999px;opacity:0;transition:.22s;z-index:80;pointer-events:none;white-space:nowrap;display:flex;align-items:center;gap:8px;backdrop-filter:blur(10px)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
+<script>/* スマホで開いたときは、画面の中の飾りのステータスバーを消して全画面にする */
+(function(){try{if(window.matchMedia("(max-width:500px)").matches||("ontouchstart" in window&&Math.min(screen.width,screen.height)<=500))document.documentElement.classList.add("native");}catch(e){}})();</script>
 </head>
 <body>
 <div class="phone" id="phone">
