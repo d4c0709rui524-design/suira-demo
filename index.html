@@ -7124,7 +7124,10 @@ window.installLive = function (SB) {
   window.UI = {
     onProfile(p) { applyProfile(p); if (isActive("me")) renderMe(); if (isActive("talks")) renderTalks(); },
     onState(s) {
-      if (s.priv) { PRIV.adult = s.priv.adult ?? PRIV.adult; PRIV.adPers = s.priv.adPers !== false && PRIV.adult === true; PRIV.link = s.priv.link || {}; PRIV.share = s.priv.share || {}; if (s.priv.ai !== undefined) PRIV.ai = s.priv.ai || (PRIV.ai === null ? null : false);
+      /* アプリでは同意しているのに、サーバーに記録が一度もない（前の版で同意した場合など）→ 送り直す。
+         サーバーで false（ほかの端末でオフにした）ときは、そちらに合わせる */
+      if (PRIV.ai && (!s.priv || s.priv.ai === undefined) && !window.__aiResync) { window.__aiResync = 1; SB.setPrivacy({ adPers: !!PRIV.adPers, link: PRIV.link || {}, share: PRIV.share || {}, ai: true }).catch(() => { window.__aiResync = 0; }); }
+      else if (s.priv) { PRIV.adult = s.priv.adult ?? PRIV.adult; PRIV.adPers = s.priv.adPers !== false && PRIV.adult === true; PRIV.link = s.priv.link || {}; PRIV.share = s.priv.share || {}; if (s.priv.ai !== undefined) PRIV.ai = s.priv.ai || (PRIV.ai === null ? null : false);
         try { localStorage.setItem("flua.priv", JSON.stringify(PRIV)); } catch (_) {} }
       QMAX = s.quotaMax || 10000;
       const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
